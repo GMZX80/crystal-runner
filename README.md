@@ -4,9 +4,9 @@ Crystal Runner is a small mobile-first Babylon.js 3D arcade game. The player con
 
 ## Play
 
-- GitHub Pages: pending first deployment
-- Repository: pending creation
-- Current status: playable local pilot
+- GitHub Pages: https://gmzx80.github.io/crystal-runner/
+- Repository: https://github.com/GMZX80/crystal-runner
+- Current status: playable browser pilot
 
 ## Controls
 
@@ -32,6 +32,12 @@ base: "/crystal-runner/"
 ```
 
 GitHub Pages deploys from `.github/workflows/deploy.yml` using GitHub Actions. GitHub Pages is the browser playtesting stage, not Android or iOS deployment.
+
+Latest validated deployment:
+
+- Commit: `eedf39b701ff16719ccccd76e67aba103ce11722`
+- Workflow: https://github.com/GMZX80/crystal-runner/actions/runs/28656028435
+- Result: passed after rerunning the initial Pages deploy job
 
 ## Mobile Packaging Preparation
 

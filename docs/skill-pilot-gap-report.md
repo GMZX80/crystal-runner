@@ -51,14 +51,17 @@ Date: 2026-07-03
 
 ## Technical Problems
 
-- Pending local and deployed validation.
+- The local environment's first `npm install` passed but did not install dev dependencies, so `npm run build` initially failed with `vite: not found`. Running `npm install --include=dev` fixed the local environment, and GitHub Actions `npm ci` worked.
+- Importing Babylon from the root `@babylonjs/core` barrel produced a roughly 5.98 MB minified JS chunk. Switching to more granular Babylon imports reduced the main built JS chunk to roughly 1.12 MB, but Vite still warns about a chunk over 500 kB.
 
 ## Deployment Problems
 
-- Pending first GitHub Pages run.
+- The first GitHub Pages deployment created the artifact and deployment but returned `Deployment failed, try again later.` Rerunning failed jobs succeeded without workflow changes. This should be recorded as a possible transient first-time Pages issue.
 
 ## Recommended Fixes To game-production-skills/
 
 - Add a minimal `scene-template.ts` that is directly compatible with Vite and `@babylonjs/core`.
 - Add a `deployed-url-test-results.md` template under skill 15 or 20.
 - Add a "browser pilot only; Capacitor later" subsection to skill 12.
+- Add a note in skill 03 or 07 warning that Babylon root barrel imports can create very large bundles; prefer granular imports for browser/mobile pilots.
+- Add a note in skill 20 that first-time GitHub Pages deployment can fail transiently after enabling Pages and may pass on rerun if the artifact was created successfully.

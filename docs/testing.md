@@ -28,4 +28,31 @@ npm run preview
 
 ## Current Evidence
 
-Pending first local and deployed validation.
+Validated on 2026-07-03:
+
+- `npm install`: passed. In this local container, the first install omitted dev dependencies; `npm install --include=dev` installed Vite/TypeScript and GitHub Actions `npm ci` installed successfully.
+- `npm run build`: passed.
+- `npm run preview`: passed at `http://localhost:4173/crystal-runner/`.
+- GitHub Pages: passed at `https://gmzx80.github.io/crystal-runner/`.
+- Workflow: `https://github.com/GMZX80/crystal-runner/actions/runs/28656028435`.
+- Deployment commit: `eedf39b701ff16719ccccd76e67aba103ce11722`.
+
+## Deployed URL Checks
+
+- [x] Game loads from GitHub Pages
+- [x] Assets load correctly
+- [x] No critical console errors; only normal Babylon startup log observed
+- [x] Keyboard controls work
+- [x] Touch button controls work in browser automation
+- [x] Score updates
+- [x] Collision/failure works
+- [x] Restart works
+- [x] Desktop layout works
+- [x] Mobile viewport layout works in browser automation
+- [x] Audio/visual feedback works where implemented
+
+## Not Yet Completed
+
+- Real Android Chrome device test.
+- Real iOS Safari device test.
+- Tablet browser test.

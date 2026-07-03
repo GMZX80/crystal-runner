@@ -1,12 +1,12 @@
 # Playtesting
 
-Playable URL: pending first GitHub Pages deployment
+Playable URL: https://gmzx80.github.io/crystal-runner/
 
 Test objective: Confirm that first-time players understand lane switching, crystal collection, obstacle avoidance, failure, and retry within three minutes.
 
 Suggested play duration: 3-5 minutes or three complete runs.
 
-Build/commit tested: pending first deployment
+Build/commit tested: `eedf39b701ff16719ccccd76e67aba103ce11722`
 
 ## Questions For Playtesters
 

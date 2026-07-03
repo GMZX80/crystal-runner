@@ -1,8 +1,8 @@
 # Deployment
 
-Repository URL: pending creation
+Repository URL: https://github.com/GMZX80/crystal-runner
 
-GitHub Pages URL: pending deployment
+GitHub Pages URL: https://gmzx80.github.io/crystal-runner/
 
 Vite base path:
 
@@ -18,13 +18,19 @@ The repository settings should use GitHub Pages deployment from GitHub Actions.
 
 ## Browser Deployment Checklist
 
-- [ ] Public repository suitability reviewed
-- [ ] `npm install` passes
-- [ ] `npm run build` passes
-- [ ] `npm run preview` passes
-- [ ] Workflow runs on push to `main`
-- [ ] Pages deployment succeeds
-- [ ] Deployed URL tested directly
+- [x] Public repository suitability reviewed
+- [x] `npm install` passes
+- [x] `npm run build` passes
+- [x] `npm run preview` passes
+- [x] Workflow runs on push to `main`
+- [x] Pages deployment succeeds
+- [x] Deployed URL tested directly
+
+## Latest Deployment
+
+- Commit: `eedf39b701ff16719ccccd76e67aba103ce11722`
+- Workflow: `https://github.com/GMZX80/crystal-runner/actions/runs/28656028435`
+- Note: first deploy job returned a transient GitHub Pages failure after artifact upload; rerunning failed jobs succeeded.
 
 ## Android/iOS
 
