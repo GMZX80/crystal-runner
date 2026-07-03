@@ -50,3 +50,20 @@ Accessibility issues found: real-device small-screen readability still needs hum
 Performance issues found: existing Babylon chunk-size warning remains.
 Priority fixes: tune scale/readability from real player feedback.
 Next iteration goal: tune sprite scale/readability from real playtest feedback and theme the path/environment.
+
+Iteration number: 4
+Date: 2026-07-03
+Git commit: pending at time of note
+GitHub Pages URL: https://gmzx80.github.io/crystal-runner/
+Build status: local build passed; deployment pending at time of note
+Test objective: Return active gameplay visuals to lightweight 3D shapes and add dynamic runway lighting.
+Target playtesters: Graham / early collaborators
+Devices tested: desktop Chromium through Playwright automation
+Browser/device notes: local preview showed a glowing 3D runner, faceted crystal pickups, solid hazard meshes, and runway lights receding into the distance.
+Feedback summary: The game no longer depends on sprite billboards for active gameplay visuals.
+Bugs found: none in local smoke test.
+Design issues found: runway lighting improves depth, but real-player readability and difficulty tuning still need playtest feedback.
+Accessibility issues found: reduced-motion toggle still not implemented.
+Performance issues found: existing Babylon chunk-size warning remains; dynamic point lights are intentionally limited.
+Priority fixes: deploy, retest from GitHub Pages, then test on physical Android/iPhone.
+Next iteration goal: tune lighting intensity, hazard readability, and first-minute difficulty from real player feedback.

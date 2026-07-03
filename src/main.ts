@@ -2,27 +2,35 @@ import { ArcRotateCamera } from "@babylonjs/core/Cameras/arcRotateCamera";
 import { Engine } from "@babylonjs/core/Engines/engine";
 import { DirectionalLight } from "@babylonjs/core/Lights/directionalLight";
 import { HemisphericLight } from "@babylonjs/core/Lights/hemisphericLight";
+import { PointLight } from "@babylonjs/core/Lights/pointLight";
 import { StandardMaterial } from "@babylonjs/core/Materials/standardMaterial";
 import { Color3, Color4 } from "@babylonjs/core/Maths/math.color";
 import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { Mesh } from "@babylonjs/core/Meshes/mesh";
 import { MeshBuilder } from "@babylonjs/core/Meshes/meshBuilder";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
+import { CreateCapsule } from "@babylonjs/core/Meshes/Builders/capsuleBuilder";
 import { Scene } from "@babylonjs/core/scene";
 import "@babylonjs/core/Meshes/Builders/boxBuilder";
-import "@babylonjs/core/Meshes/Builders/planeBuilder";
-import { AnimatedBillboard } from "./rendering/AnimatedBillboard";
+import "@babylonjs/core/Meshes/Builders/cylinderBuilder";
+import "@babylonjs/core/Meshes/Builders/sphereBuilder";
 import "./style.css";
 
 type GameState = "ready" | "running" | "gameover" | "paused";
 type RunnerItem = {
   proxy: Mesh;
-  visual: AnimatedBillboard;
+  visual: Mesh;
   lane: number;
   z: number;
   type: "crystal" | "obstacle";
   active: boolean;
   wobbleSeed: number;
+};
+type RunwayLight = {
+  marker: Mesh;
+  light: PointLight | null;
+  z: number;
+  phase: number;
 };
 
 const canvas = document.querySelector<HTMLCanvasElement>("#game-canvas");
@@ -50,7 +58,6 @@ engine.setHardwareScalingLevel(Math.max(1, window.devicePixelRatio / 1.5));
 
 const scene = new Scene(engine);
 scene.clearColor = new Color4(0.02, 0.05, 0.09, 1);
-const assetBaseUrl = `${import.meta.env.BASE_URL}assets/kenney-pirate/`;
 
 const camera = new ArcRotateCamera("camera", Math.PI / 2, 1.05, 16, new Vector3(0, 1.8, 5), scene);
 camera.attachControl(canvas, true);
@@ -59,7 +66,7 @@ camera.inputs.clear();
 new HemisphericLight("ambient", new Vector3(0, 1, 0), scene).intensity = 0.68;
 const keyLight = new DirectionalLight("key", new Vector3(-0.4, -0.9, 0.55), scene);
 keyLight.position = new Vector3(5, 9, -8);
-keyLight.intensity = 1.8;
+keyLight.intensity = 1.1;
 
 const materials = createMaterials(scene);
 const world = new TransformNode("world", scene);
@@ -85,38 +92,21 @@ player.position = new Vector3(0, 0.48, 1.8);
 player.isVisible = false;
 player.parent = world;
 
-const playerVisual = new AnimatedBillboard("runner-visual", scene, {
-  textureUrl: `${assetBaseUrl}player-ship.png`,
-  width: 1.35,
-  height: 1.9,
-  columns: 1,
-  rows: 1,
-  animations: {
-    idle: { frames: [0], fps: 4, loop: true },
-    run: { frames: [0], fps: 8, loop: true },
-    hit: { frames: [0], fps: 1, loop: false }
-  },
-  initialAnimation: "idle",
-  emissiveTint: new Color3(0.03, 0.16, 0.2)
-});
-playerVisual.mesh.position = new Vector3(0, 0.7, 0);
-playerVisual.mesh.parent = player;
+const playerVisual = CreateCapsule("runner-visual", { height: 1.45, radius: 0.35, tessellation: 16, subdivisions: 3 }, scene);
+playerVisual.position = new Vector3(0, 0.68, 0);
+playerVisual.material = materials.player;
+playerVisual.parent = player;
 
-const explosionFrames = ["explosion-1.png", "explosion-2.png", "explosion-3.png"].map((fileName, index) => {
-  const sprite = new AnimatedBillboard(`collision-explosion-${index + 1}`, scene, {
-    textureUrl: `${assetBaseUrl}${fileName}`,
-    width: 2.2,
-    height: 2.2,
-    animations: {
-      idle: { frames: [0], fps: 1, loop: false }
-    },
-    emissiveTint: new Color3(0.55, 0.16, 0.02)
-  });
-  sprite.mesh.position = new Vector3(0, 1.05, 1.8);
-  sprite.mesh.parent = world;
-  sprite.setEnabled(false);
-  return sprite;
-});
+const playerCoreGlow = MeshBuilder.CreateSphere("runner-core-glow", { diameter: 0.72, segments: 16 }, scene);
+playerCoreGlow.position = new Vector3(0, 0.65, 0);
+playerCoreGlow.material = materials.playerGlow;
+playerCoreGlow.parent = playerVisual;
+
+const explosion = MeshBuilder.CreateSphere("collision-explosion", { diameter: 1.4, segments: 16 }, scene);
+explosion.position = new Vector3(0, 1.05, 1.8);
+explosion.material = materials.explosion;
+explosion.setEnabled(false);
+explosion.parent = world;
 
 const pathSegments: Mesh[] = [];
 for (let i = 0; i < 18; i += 1) {
@@ -137,6 +127,7 @@ for (const x of [-3.72, 3.72]) {
 }
 
 const items: RunnerItem[] = [];
+const runwayLights = createRunwayLights(scene, world, materials);
 
 function createMaterials(activeScene: Scene) {
   const pathMat = new StandardMaterial("path-mat", activeScene);
@@ -147,7 +138,70 @@ function createMaterials(activeScene: Scene) {
   railMat.diffuseColor = new Color3(0.16, 0.34, 0.42);
   railMat.emissiveColor = new Color3(0.04, 0.22, 0.28);
 
-  return { path: pathMat, rail: railMat };
+  const playerMat = new StandardMaterial("runner-mesh-mat", activeScene);
+  playerMat.diffuseColor = new Color3(0.11, 0.78, 0.88);
+  playerMat.emissiveColor = new Color3(0.02, 0.32, 0.42);
+  playerMat.specularColor = new Color3(0.35, 0.72, 0.8);
+
+  const playerGlowMat = new StandardMaterial("runner-glow-mat", activeScene);
+  playerGlowMat.diffuseColor = new Color3(0.08, 0.95, 1);
+  playerGlowMat.emissiveColor = new Color3(0.04, 0.72, 0.95);
+  playerGlowMat.specularColor = Color3.Black();
+
+  const crystalMat = new StandardMaterial("crystal-mesh-mat", activeScene);
+  crystalMat.diffuseColor = new Color3(0.94, 0.82, 0.24);
+  crystalMat.emissiveColor = new Color3(0.62, 0.42, 0.05);
+  crystalMat.specularColor = new Color3(0.9, 0.82, 0.45);
+
+  const obstacleMat = new StandardMaterial("obstacle-mesh-mat", activeScene);
+  obstacleMat.diffuseColor = new Color3(0.55, 0.08, 0.08);
+  obstacleMat.emissiveColor = new Color3(0.18, 0.02, 0.015);
+  obstacleMat.specularColor = new Color3(0.32, 0.08, 0.06);
+
+  const runwayLightMat = new StandardMaterial("runway-light-mat", activeScene);
+  runwayLightMat.diffuseColor = new Color3(0.2, 0.95, 1);
+  runwayLightMat.emissiveColor = new Color3(0.04, 0.72, 0.95);
+  runwayLightMat.specularColor = Color3.Black();
+
+  const explosionMat = new StandardMaterial("explosion-mesh-mat", activeScene);
+  explosionMat.diffuseColor = new Color3(1, 0.42, 0.08);
+  explosionMat.emissiveColor = new Color3(1, 0.18, 0.03);
+  explosionMat.specularColor = Color3.Black();
+
+  return {
+    path: pathMat,
+    rail: railMat,
+    player: playerMat,
+    playerGlow: playerGlowMat,
+    crystal: crystalMat,
+    obstacle: obstacleMat,
+    runwayLight: runwayLightMat,
+    explosion: explosionMat
+  };
+}
+
+function createRunwayLights(activeScene: Scene, parent: TransformNode, gameMaterials: ReturnType<typeof createMaterials>) {
+  const lights: RunwayLight[] = [];
+  for (let i = 0; i < 18; i += 1) {
+    for (const side of [-1, 1]) {
+      const marker = MeshBuilder.CreateSphere(`runway-light-${i}-${side}`, { diameter: 0.22, segments: 8 }, activeScene);
+      marker.position = new Vector3(side * 3.48, 0.15, -i * 4 - 1.5);
+      marker.material = gameMaterials.runwayLight;
+      marker.parent = parent;
+
+      let light: PointLight | null = null;
+      if (i % 4 === 0) {
+        light = new PointLight(`runway-point-${i}-${side}`, marker.position.clone(), activeScene);
+        light.diffuse = new Color3(0.14, 0.86, 1);
+        light.specular = new Color3(0.03, 0.18, 0.22);
+        light.range = 5.5;
+        light.intensity = 0.45;
+        light.parent = parent;
+      }
+      lights.push({ marker, light, z: marker.position.z, phase: i * 0.45 + side * 0.2 });
+    }
+  }
+  return lights;
 }
 
 function startRun() {
@@ -161,13 +215,13 @@ function startRun() {
   nextPattern = 0;
   player.position.x = lanePositions[lane];
   player.position.y = 0.48;
-  playerVisual.mesh.position.y = 0.7;
-  playerVisual.mesh.rotation.z = 0;
-  playerVisual.play("run", true);
+  playerVisual.position.y = 0.68;
+  playerVisual.rotation.z = 0;
+  playerCoreGlow.scaling.set(1, 1, 1);
   explosionTimer = 0;
-  explosionFrames.forEach((sprite) => sprite.setEnabled(false));
+  explosion.setEnabled(false);
   items.forEach((item) => {
-    item.visual.dispose();
+    item.visual.dispose(false, false);
     item.proxy.dispose(false, false);
   });
   items.length = 0;
@@ -179,13 +233,12 @@ function startRun() {
 
 function endRun(reason: string) {
   state = "gameover";
-  playerVisual.play("hit", true);
   triggerExplosion();
   best = Math.max(best, Math.floor(score));
   localStorage.setItem("crystal-runner-best", String(best));
   updateHud();
   overlayTitle.textContent = "Run Over";
-  overlayText.textContent = `${reason} Score ${Math.floor(score)}. Crests ${crystals}. Try again for a cleaner run.`;
+  overlayText.textContent = `${reason} Score ${Math.floor(score)}. Crystals ${crystals}. Try again for a cleaner run.`;
   primaryAction.textContent = "Restart";
   window.setTimeout(() => {
     if (state === "gameover") {
@@ -228,23 +281,14 @@ function spawnItem(type: RunnerItem["type"], itemLane: number, z: number) {
   proxy.parent = world;
   proxy.position = new Vector3(lanePositions[itemLane], type === "crystal" ? 0.58 : 0.46, z);
 
-  const visual = new AnimatedBillboard(`${type}-visual-${items.length}`, scene, {
-    textureUrl: `${assetBaseUrl}${type === "crystal" ? "collectible-gold-crest.png" : "obstacle-cannon.png"}`,
-    width: type === "crystal" ? 1.2 : 1.45,
-    height: type === "crystal" ? 0.86 : 0.66,
-    columns: 1,
-    rows: 1,
-    animations: {
-      idle: { frames: [0], fps: type === "crystal" ? 10 : 6, loop: true },
-      collect: { frames: [0], fps: 12, loop: false },
-      hit: { frames: [0], fps: 1, loop: false }
-    },
-    initialAnimation: "idle",
-    emissiveTint: type === "crystal" ? new Color3(0.38, 0.28, 0.04) : new Color3(0.12, 0.03, 0.02)
-  });
-  visual.mesh.parent = proxy;
-  visual.mesh.position = new Vector3(0, type === "crystal" ? 0.1 : 0.04, 0);
-  visual.mesh.rotation.z = type === "crystal" ? 0 : -0.12 + (nextPattern % 3) * 0.12;
+  const visual = type === "crystal"
+    ? MeshBuilder.CreateCylinder(`${type}-visual-${items.length}`, { height: 0.92, diameterTop: 0.18, diameterBottom: 0.64, tessellation: 4 }, scene)
+    : MeshBuilder.CreateBox(`${type}-visual-${items.length}`, { width: 1.1, height: 0.8, depth: 0.82 }, scene);
+  visual.parent = proxy;
+  visual.position = new Vector3(0, type === "crystal" ? 0.1 : 0.04, 0);
+  visual.rotation.z = type === "crystal" ? Math.PI / 4 : -0.12 + (nextPattern % 3) * 0.12;
+  visual.rotation.y = type === "crystal" ? Math.PI / 4 : 0.15;
+  visual.material = type === "crystal" ? materials.crystal : materials.obstacle;
 
   items.push({ proxy, visual, lane: itemLane, z, type, active: true, wobbleSeed: performance.now() * 0.01 + itemLane });
 }
@@ -279,9 +323,12 @@ function updateGame(dt: number) {
   const targetX = lanePositions[targetLane];
   player.position.x += (targetX - player.position.x) * Math.min(1, dt * 12);
   lane = targetLane;
-  playerVisual.mesh.position.y = 0.7 + Math.sin(performance.now() * 0.008) * 0.055;
-  playerVisual.mesh.rotation.z = (targetX - player.position.x) * -0.08 + Math.sin(performance.now() * 0.006) * 0.018;
-  playerVisual.update(dt);
+  const now = performance.now();
+  playerVisual.position.y = 0.68 + Math.sin(now * 0.008) * 0.055;
+  playerVisual.rotation.z = (targetX - player.position.x) * -0.08 + Math.sin(now * 0.006) * 0.018;
+  playerVisual.rotation.y += dt * 1.1;
+  const corePulse = 1 + Math.sin(now * 0.014) * 0.08;
+  playerCoreGlow.scaling.set(corePulse, corePulse, corePulse);
 
   for (const segment of pathSegments) {
     segment.position.z += speed * dt;
@@ -296,14 +343,14 @@ function updateGame(dt: number) {
     }
     item.z += speed * dt;
     item.proxy.position.z = item.z;
-    item.visual.mesh.position.y = (item.type === "crystal" ? 0.12 : 0.04) + Math.sin(performance.now() * 0.006 + item.wobbleSeed) * 0.08;
-    item.visual.update(dt);
+    item.visual.position.y = (item.type === "crystal" ? 0.12 : 0.04) + Math.sin(now * 0.006 + item.wobbleSeed) * 0.08;
     if (item.type === "crystal") {
-      const pulseScale = 1 + Math.sin(performance.now() * 0.012 + item.wobbleSeed) * 0.12;
-      item.visual.setScale(pulseScale);
-      item.visual.mesh.rotation.z += dt * 3.8;
+      const pulseScale = 1 + Math.sin(now * 0.012 + item.wobbleSeed) * 0.12;
+      item.visual.scaling.set(pulseScale, pulseScale, pulseScale);
+      item.visual.rotation.y += dt * 4.4;
+      item.visual.rotation.z += dt * 1.5;
     } else {
-      item.visual.mesh.rotation.z += Math.sin(performance.now() * 0.005 + item.wobbleSeed) * dt * 0.22;
+      item.visual.rotation.z += Math.sin(now * 0.005 + item.wobbleSeed) * dt * 0.22;
     }
 
     const dx = Math.abs(item.proxy.position.x - player.position.x);
@@ -318,7 +365,7 @@ function updateGame(dt: number) {
 
     if (item.proxy.position.z > 7) {
       item.active = false;
-      item.visual.dispose();
+      item.visual.dispose(false, false);
       item.proxy.dispose(false, false);
     }
   }
@@ -334,8 +381,7 @@ function updateGame(dt: number) {
 
 function collectCrystal(item: RunnerItem) {
   item.active = false;
-  item.visual.play("collect", true);
-  item.visual.dispose();
+  item.visual.dispose(false, false);
   item.proxy.dispose(false, false);
   crystals += 1;
   score += 35;
@@ -345,30 +391,44 @@ function collectCrystal(item: RunnerItem) {
 
 function triggerExplosion() {
   explosionTimer = 0.42;
-  explosionFrames.forEach((sprite, index) => {
-    sprite.mesh.position.x = player.position.x;
-    sprite.mesh.position.y = 1.05;
-    sprite.mesh.position.z = player.position.z;
-    sprite.setScale(0.8);
-    sprite.setEnabled(index === 0);
-  });
+  explosion.position.x = player.position.x;
+  explosion.position.y = 1.05;
+  explosion.position.z = player.position.z;
+  explosion.scaling.set(0.7, 0.7, 0.7);
+  explosion.setEnabled(true);
 }
 
 function updateExplosion(dt: number) {
   if (explosionTimer <= 0) {
-    explosionFrames.forEach((sprite) => sprite.setEnabled(false));
+    explosion.setEnabled(false);
     return;
   }
   explosionTimer = Math.max(0, explosionTimer - dt);
   const progress = 1 - explosionTimer / 0.42;
-  const frame = Math.min(explosionFrames.length - 1, Math.floor(progress * explosionFrames.length));
   const scale = 0.9 + progress * 0.9;
-  explosionFrames.forEach((sprite, index) => {
-    sprite.setEnabled(index === frame);
-    sprite.setScale(scale);
-  });
+  explosion.scaling.set(scale, scale, scale);
+  explosion.rotation.y += dt * 8;
   if (explosionTimer === 0) {
-    explosionFrames.forEach((sprite) => sprite.setEnabled(false));
+    explosion.setEnabled(false);
+  }
+}
+
+function updateRunwayLights(dt: number) {
+  const now = performance.now();
+  for (const runwayLight of runwayLights) {
+    if (state === "running") {
+      runwayLight.z += speed * dt;
+      if (runwayLight.z > 5) {
+        runwayLight.z -= 72;
+      }
+      runwayLight.marker.position.z = runwayLight.z;
+    }
+    const pulseAmount = 0.55 + Math.max(0, Math.sin(now * 0.006 + runwayLight.phase)) * 0.75;
+    runwayLight.marker.scaling.set(pulseAmount, pulseAmount, pulseAmount);
+    if (runwayLight.light) {
+      runwayLight.light.position.copyFrom(runwayLight.marker.position);
+      runwayLight.light.intensity = 0.18 + pulseAmount * 0.32;
+    }
   }
 }
 
@@ -399,7 +459,7 @@ function beep(frequency: number, duration: number, type: OscillatorType, gainVal
 
 function updateDebug() {
   if (feedbackTextTimer > 0) {
-    debugEl.textContent = `Crest +35 | FPS ${Math.round(engine.getFps())} | Speed ${speed.toFixed(1)} | State ${state}`;
+    debugEl.textContent = `Crystal +35 | FPS ${Math.round(engine.getFps())} | Speed ${speed.toFixed(1)} | State ${state}`;
     return;
   }
   debugEl.textContent = `FPS ${Math.round(engine.getFps())} | Speed ${speed.toFixed(1)} | State ${state}`;
@@ -472,11 +532,12 @@ engine.runRenderLoop(() => {
   feedbackTextTimer = Math.max(0, feedbackTextTimer - dt);
   updateGame(dt);
   updateExplosion(dt);
+  updateRunwayLights(dt);
   updateCamera(dt);
   updateDebug();
   scene.render();
 });
 
 overlayTitle.textContent = "Crystal Runner";
-overlayText.textContent = "Dodge cannon hazards, collect gold crests, and survive as speed climbs.";
+overlayText.textContent = "Dodge glowing hazards, collect crystals, and survive as speed climbs.";
 primaryAction.textContent = "Start Run";

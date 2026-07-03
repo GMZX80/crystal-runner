@@ -38,40 +38,39 @@ Date: 2026-07-03
 - No new image optimisation dependency was added.
 - Files are already very small default-size transparent PNGs.
 - The full ZIP, previews, vector sources, retina files, and unused sprites are not committed.
-- Selected runtime payload added is under 15 KB before build copying.
-- Runtime sprites are displayed as unlit alpha billboard planes so they read correctly in the 3D camera.
-- Gameplay entities use invisible collision proxies so transparent sprite pixels do not create unfair collisions.
+- Selected Kenney sprite payload is under 15 KB before build copying, but those images are no longer required by the active gameplay runtime.
+- The active runtime uses procedural 3D Babylon.js meshes for player, crystals, hazards, runway markers, and effects.
+- Gameplay entities use invisible collision proxies where useful so visual representation can change without changing collision rules.
 
 ## Supported Visual Asset Classes
 
 ### 3D assets
 
-- GLB/glTF models.
-- Used for world geometry, path, environment props, and later character/ship models.
+- Procedural Babylon.js meshes for current prototype visuals.
+- GLB/glTF models for future world geometry, path, environment props, and later character/vehicle models.
 - Must follow mobile performance budgets for triangles, materials, textures, draw calls, and loading time.
 
 ### 2.5D sprite assets
 
 - Transparent PNG sprites or spritesheets.
-- Used for fast iteration, pickups, hazards, characters, and effects where 3D models are not yet justified.
+- Optional future/fallback representation for fast art experiments, UI-world markers, and cheap effects.
 - Must use alpha-aware unlit materials and vertical billboard planes unless deliberately used as a floor decal.
 - Must use a separate collision proxy for gameplay.
 
 ## References Updated
 
-- `src/main.ts` now loads selected Kenney sprites as Babylon.js textured planes.
-- `public/assets/assets.manifest.json` records runtime asset roles and source.
+- `src/main.ts` now uses lightweight procedural 3D meshes plus limited dynamic runway point lights.
+- `public/assets/assets.manifest.json` records the previously selected Kenney sprite roles and source.
 - `README.md` and `docs/asset-source.md` record source and licence.
 
 ## Checks Required
 
-- `npm run build`: passed locally after billboard refactor.
-- Local browser preview visual check: passed for upright sprites, collision/restart, and mobile-sized viewport.
-- GitHub Pages deployment check: passed for commit `9c8dc6925475f9903c5d47428e97f966421bdecb`.
-- Deployed URL visual check: passed for desktop and mobile-sized viewports.
+- `npm run build`: passed locally after the 3D mesh/runway-light refactor.
+- Local browser preview visual check: passed for 3D runner, crystal meshes, hazard meshes, runway lights, controls, and score updates.
+- GitHub Pages deployment check: pending for the 3D mesh/runway-light refactor at time of note.
 
 ## Remaining Risks
 
 - The game still relies on a large Babylon.js runtime bundle.
 - Real mobile device testing is still required.
-- Sprite readability should be checked with human players on small screens.
+- Dynamic lighting intensity and hazard readability should be checked with human players on small screens.

@@ -19,11 +19,12 @@ npm run preview
 - [ ] Keyboard controls work
 - [ ] Touch controls work
 - [ ] Score updates
-- [ ] Crest collection works
+- [ ] Crystal collection works
 - [ ] Collision/failure works
 - [ ] Restart works
-- [ ] Sprite planes are upright billboards, not floor decals
-- [ ] Collision uses invisible proxies rather than transparent sprite rectangles
+- [ ] 3D player, crystal, and hazard meshes are visible from the gameplay camera
+- [ ] Runway lights pulse and move into the distance without critical performance drops
+- [ ] Collision uses invisible proxies rather than visual mesh bounds where needed
 - [ ] Desktop layout works
 - [ ] Mobile browser layout works
 - [ ] Audio/visual feedback works where implemented
@@ -50,6 +51,16 @@ Validated on 2026-07-03:
 - Deployed commit: `9c8dc6925475f9903c5d47428e97f966421bdecb`.
 - Live deployed check: page HTTP 200, player sprite HTTP 200, no critical console errors, controls/collision/game-over/mobile viewport passed.
 - Deployment commit: `eedf39b701ff16719ccccd76e67aba103ce11722`.
+
+## 2026-07-03 3D Runway-Light Iteration
+
+- Active gameplay visuals returned to lightweight 3D mesh primitives.
+- Player: glowing capsule/sphere mesh.
+- Collectible: faceted crystal mesh.
+- Hazard: solid mesh obstacle.
+- Effects: emissive mesh pulse.
+- Runway: emissive side markers plus limited dynamic point lights.
+- QA focus: verify dynamic lights remain readable from desktop and mobile-sized browser viewports.
 
 ## Deployed URL Checks
 
