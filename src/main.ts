@@ -168,12 +168,20 @@ function updateHud() {
   bestEl.textContent = String(best);
 }
 
-function moveLane(direction: -1 | 1) {
+function moveLane(worldDirection: -1 | 1) {
   if (state !== "running") {
     return;
   }
-  targetLane = Math.max(0, Math.min(2, targetLane + direction));
+  targetLane = Math.max(0, Math.min(2, targetLane + worldDirection));
   beep(260 + targetLane * 60, 0.025, "triangle", 0.02);
+}
+
+function moveScreenLeft() {
+  moveLane(1);
+}
+
+function moveScreenRight() {
+  moveLane(-1);
 }
 
 function spawnItem(type: RunnerItem["type"], itemLane: number, z: number) {
@@ -326,15 +334,15 @@ primaryAction.addEventListener("click", () => {
   }
 });
 
-laneLeft.addEventListener("click", () => moveLane(-1));
-laneRight.addEventListener("click", () => moveLane(1));
+laneLeft.addEventListener("click", moveScreenLeft);
+laneRight.addEventListener("click", moveScreenRight);
 
 window.addEventListener("keydown", (event) => {
   if (event.key === "ArrowLeft" || event.key.toLowerCase() === "a") {
-    moveLane(-1);
+    moveScreenLeft();
   }
   if (event.key === "ArrowRight" || event.key.toLowerCase() === "d") {
-    moveLane(1);
+    moveScreenRight();
   }
   if (event.key === " " || event.key === "Enter") {
     if (state === "ready" || state === "gameover") {
@@ -352,7 +360,11 @@ window.addEventListener("pointerdown", (event) => {
 window.addEventListener("pointerup", (event) => {
   const dx = event.clientX - touchStartX;
   if (Math.abs(dx) > 32) {
-    moveLane(dx > 0 ? 1 : -1);
+    if (dx > 0) {
+      moveScreenRight();
+    } else {
+      moveScreenLeft();
+    }
   }
 });
 
