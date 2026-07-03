@@ -25,3 +25,5 @@
 - The selected assets are CC0 and suitable for the public GitHub repository.
 - Attribution is not required by the licence, but the README records the source.
 - The full source ZIP is not committed; only selected small runtime PNGs are included.
+- Sprites are displayed as upright Y-axis billboards in the 3D scene, not as flat floor decals.
+- Gameplay collision uses separate invisible proxy boxes rather than sprite rectangles.

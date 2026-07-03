@@ -33,3 +33,20 @@ Accessibility issues found: none newly discovered.
 Performance issues found: existing Babylon chunk-size warning remains.
 Priority fixes: deploy input fix and retest from GitHub Pages.
 Next iteration goal: Run real player testing from the corrected public build.
+
+Iteration number: 3
+Date: 2026-07-03
+Git commit: pending at time of note
+GitHub Pages URL: https://gmzx80.github.io/crystal-runner/
+Build status: local build passed; deployment pending at time of note
+Test objective: Replace flat floor-laid sprites with upright 2.5D billboard sprites in the Babylon.js 3D scene.
+Target playtesters: Graham / early collaborators
+Devices tested: desktop Chromium and mobile-sized Chromium viewport through Playwright automation
+Browser/device notes: upright Y-axis billboard sprites render clearly from the main 3D camera; no critical console errors in local preview.
+Feedback summary: Sprite artwork is no longer flattened onto the path; gameplay stays 3D with invisible collision proxies.
+Bugs found: flat-sprite visibility issue fixed locally.
+Design issues found: sea path still needs stronger pirate/environment theme.
+Accessibility issues found: real-device small-screen readability still needs human testing.
+Performance issues found: existing Babylon chunk-size warning remains.
+Priority fixes: deploy and validate from GitHub Pages.
+Next iteration goal: tune sprite scale/readability from real playtest feedback and theme the path/environment.

@@ -15,8 +15,21 @@ import "@babylonjs/core/Meshes/Builders/planeBuilder";
 import "./style.css";
 
 type GameState = "ready" | "running" | "gameover" | "paused";
+type SpriteAnimationState = {
+  texture: Texture;
+  columns: number;
+  rows: number;
+  frames: number[];
+  fps: number;
+  loop: boolean;
+  elapsed: number;
+  currentFrameIndex: number;
+  playing: boolean;
+};
 type RunnerItem = {
-  mesh: Mesh;
+  proxy: Mesh;
+  visual: Mesh;
+  animation: SpriteAnimationState;
   lane: number;
   z: number;
   type: "crystal" | "obstacle";
@@ -81,16 +94,18 @@ let explosionTimer = 0;
 
 bestEl.textContent = String(best);
 
-const player = MeshBuilder.CreatePlane("runner", { width: 1.55, height: 1.95 }, scene);
-player.position = new Vector3(0, 0.2, 1.8);
-player.rotation.x = Math.PI / 2;
-player.rotation.z = 0;
-player.material = spriteMaterials.player;
+const player = MeshBuilder.CreateBox("runner-collision", { width: 1, height: 0.95, depth: 0.95 }, scene);
+player.position = new Vector3(0, 0.48, 1.8);
+player.isVisible = false;
 player.parent = world;
 
-const explosion = MeshBuilder.CreatePlane("collision-explosion", { width: 2, height: 2 }, scene);
-explosion.position = new Vector3(0, 0.26, 1.8);
-explosion.rotation.x = Math.PI / 2;
+const playerVisual = createBillboardSprite("runner-visual", 1.35, 1.9, spriteMaterials.player, scene);
+playerVisual.position = new Vector3(0, 0.7, 0);
+playerVisual.parent = player;
+const playerAnimation = createSpriteSheetAnimation(textures.player, 1, 1, [0], 8, true);
+
+const explosion = createBillboardSprite("collision-explosion", 2.2, 2.2, spriteMaterials.explosion[0], scene);
+explosion.position = new Vector3(0, 1.05, 1.8);
 explosion.setEnabled(false);
 explosion.parent = world;
 
@@ -113,14 +128,6 @@ for (const x of [-3.72, 3.72]) {
 }
 
 const items: RunnerItem[] = [];
-const crystalTemplate = MeshBuilder.CreatePlane("crystal-template", { width: 1.7, height: 1.24 }, scene);
-crystalTemplate.rotation.x = Math.PI / 2;
-crystalTemplate.material = spriteMaterials.collectible;
-crystalTemplate.setEnabled(false);
-const obstacleTemplate = MeshBuilder.CreatePlane("obstacle-template", { width: 1.75, height: 0.78 }, scene);
-obstacleTemplate.rotation.x = Math.PI / 2;
-obstacleTemplate.material = spriteMaterials.obstacle;
-obstacleTemplate.setEnabled(false);
 
 function createTextures(activeScene: Scene) {
   const load = (fileName: string) => {
@@ -152,12 +159,14 @@ function createMaterials(activeScene: Scene) {
 function createSpriteMaterial(name: string, texture: Texture, activeScene: Scene, glow: Color3) {
   const material = new StandardMaterial(name, activeScene);
   material.diffuseTexture = texture;
+  material.emissiveTexture = texture;
   material.opacityTexture = texture;
   material.useAlphaFromDiffuseTexture = true;
   material.diffuseColor = Color3.White();
-  material.emissiveColor = glow;
+  material.emissiveColor = Color3.White().add(glow).scale(0.5);
   material.specularColor = Color3.Black();
   material.backFaceCulling = false;
+  material.disableLighting = true;
   return material;
 }
 
@@ -172,6 +181,61 @@ function createSpriteMaterials(activeScene: Scene, loadedTextures: ReturnType<ty
   };
 }
 
+function createBillboardSprite(name: string, width: number, height: number, material: StandardMaterial, activeScene: Scene) {
+  const plane = MeshBuilder.CreatePlane(name, { width, height }, activeScene);
+  plane.material = material;
+  plane.billboardMode = Mesh.BILLBOARDMODE_Y;
+  return plane;
+}
+
+function createSpriteSheetAnimation(texture: Texture, columns: number, rows: number, frames: number[], fps: number, loop: boolean): SpriteAnimationState {
+  texture.uScale = 1 / columns;
+  texture.vScale = 1 / rows;
+  const animation = {
+    texture,
+    columns,
+    rows,
+    frames,
+    fps,
+    loop,
+    elapsed: 0,
+    currentFrameIndex: 0,
+    playing: true
+  };
+  applySpriteSheetFrame(animation, frames[0] ?? 0);
+  return animation;
+}
+
+function applySpriteSheetFrame(animation: SpriteAnimationState, frame: number) {
+  const column = frame % animation.columns;
+  const row = Math.floor(frame / animation.columns);
+  animation.texture.uOffset = column / animation.columns;
+  // Babylon texture vOffset behaviour can feel inverted compared with top-left spritesheet tools.
+  // If a future sheet animates upside down, swap this for `row / animation.rows`.
+  animation.texture.vOffset = 1 - (row + 1) / animation.rows;
+}
+
+function updateSpriteSheetAnimation(animation: SpriteAnimationState, dt: number) {
+  if (!animation.playing || animation.frames.length <= 1) {
+    return;
+  }
+  animation.elapsed += dt;
+  const frameDuration = 1 / animation.fps;
+  while (animation.elapsed >= frameDuration) {
+    animation.elapsed -= frameDuration;
+    animation.currentFrameIndex += 1;
+    if (animation.currentFrameIndex >= animation.frames.length) {
+      if (animation.loop) {
+        animation.currentFrameIndex = 0;
+      } else {
+        animation.currentFrameIndex = animation.frames.length - 1;
+        animation.playing = false;
+      }
+    }
+    applySpriteSheetFrame(animation, animation.frames[animation.currentFrameIndex]);
+  }
+}
+
 function startRun() {
   state = "running";
   score = 0;
@@ -182,10 +246,15 @@ function startRun() {
   spawnTimer = 0.3;
   nextPattern = 0;
   player.position.x = lanePositions[lane];
-  player.rotation.z = 0;
+  player.position.y = 0.48;
+  playerVisual.position.y = 0.7;
+  playerVisual.rotation.z = 0;
+  playerAnimation.elapsed = 0;
+  playerAnimation.currentFrameIndex = 0;
+  playerAnimation.playing = true;
   explosionTimer = 0;
   explosion.setEnabled(false);
-  items.forEach((item) => item.mesh.dispose());
+  items.forEach((item) => item.proxy.dispose(false, false));
   items.length = 0;
   updateHud();
   overlayEl.classList.add("hidden");
@@ -234,14 +303,28 @@ function moveScreenRight() {
 }
 
 function spawnItem(type: RunnerItem["type"], itemLane: number, z: number) {
-  const source = type === "crystal" ? crystalTemplate : obstacleTemplate;
-  const mesh = source.clone(`${type}-${items.length}`) as Mesh;
-  mesh.setEnabled(true);
-  mesh.parent = world;
-  mesh.position = new Vector3(lanePositions[itemLane], type === "crystal" ? 0.28 : 0.24, z);
-  mesh.rotation.x = Math.PI / 2;
-  mesh.rotation.z = type === "crystal" ? 0 : -0.2 + (nextPattern % 3) * 0.2;
-  items.push({ mesh, lane: itemLane, z, type, active: true, wobbleSeed: performance.now() * 0.01 + itemLane });
+  const proxy = MeshBuilder.CreateBox(`${type}-collision-${items.length}`, {
+    width: type === "crystal" ? 1.05 : 1.2,
+    height: type === "crystal" ? 1.1 : 0.85,
+    depth: type === "crystal" ? 0.8 : 0.9
+  }, scene);
+  proxy.isVisible = false;
+  proxy.parent = world;
+  proxy.position = new Vector3(lanePositions[itemLane], type === "crystal" ? 0.58 : 0.46, z);
+
+  const visual = createBillboardSprite(
+    `${type}-visual-${items.length}`,
+    type === "crystal" ? 1.2 : 1.45,
+    type === "crystal" ? 0.86 : 0.66,
+    type === "crystal" ? spriteMaterials.collectible : spriteMaterials.obstacle,
+    scene
+  );
+  visual.parent = proxy;
+  visual.position = new Vector3(0, type === "crystal" ? 0.1 : 0.04, 0);
+  visual.rotation.z = type === "crystal" ? 0 : -0.12 + (nextPattern % 3) * 0.12;
+
+  const animation = createSpriteSheetAnimation(type === "crystal" ? textures.collectible : textures.obstacle, 1, 1, [0], type === "crystal" ? 10 : 6, true);
+  items.push({ proxy, visual, animation, lane: itemLane, z, type, active: true, wobbleSeed: performance.now() * 0.01 + itemLane });
 }
 
 function spawnPattern() {
@@ -274,8 +357,9 @@ function updateGame(dt: number) {
   const targetX = lanePositions[targetLane];
   player.position.x += (targetX - player.position.x) * Math.min(1, dt * 12);
   lane = targetLane;
-  player.position.y = 0.2 + Math.sin(performance.now() * 0.008) * 0.035;
-  player.rotation.z = (targetX - player.position.x) * -0.08 + Math.sin(performance.now() * 0.006) * 0.018;
+  playerVisual.position.y = 0.7 + Math.sin(performance.now() * 0.008) * 0.055;
+  playerVisual.rotation.z = (targetX - player.position.x) * -0.08 + Math.sin(performance.now() * 0.006) * 0.018;
+  updateSpriteSheetAnimation(playerAnimation, dt);
 
   for (const segment of pathSegments) {
     segment.position.z += speed * dt;
@@ -289,18 +373,19 @@ function updateGame(dt: number) {
       continue;
     }
     item.z += speed * dt;
-    item.mesh.position.z = item.z;
-    item.mesh.position.y = (item.type === "crystal" ? 0.32 : 0.24) + Math.sin(performance.now() * 0.006 + item.wobbleSeed) * 0.05;
+    item.proxy.position.z = item.z;
+    item.visual.position.y = (item.type === "crystal" ? 0.12 : 0.04) + Math.sin(performance.now() * 0.006 + item.wobbleSeed) * 0.08;
+    updateSpriteSheetAnimation(item.animation, dt);
     if (item.type === "crystal") {
       const pulseScale = 1 + Math.sin(performance.now() * 0.012 + item.wobbleSeed) * 0.12;
-      item.mesh.scaling.set(pulseScale, pulseScale, pulseScale);
-      item.mesh.rotation.z += dt * 3.8;
+      item.visual.scaling.set(pulseScale, pulseScale, pulseScale);
+      item.visual.rotation.z += dt * 3.8;
     } else {
-      item.mesh.rotation.z += Math.sin(performance.now() * 0.005 + item.wobbleSeed) * dt * 0.22;
+      item.visual.rotation.z += Math.sin(performance.now() * 0.005 + item.wobbleSeed) * dt * 0.22;
     }
 
-    const dx = Math.abs(item.mesh.position.x - player.position.x);
-    const dz = Math.abs(item.mesh.position.z - player.position.z);
+    const dx = Math.abs(item.proxy.position.x - player.position.x);
+    const dz = Math.abs(item.proxy.position.z - player.position.z);
     if (dx < 0.9 && dz < 0.88) {
       if (item.type === "crystal") {
         collectCrystal(item);
@@ -309,9 +394,9 @@ function updateGame(dt: number) {
       }
     }
 
-    if (item.mesh.position.z > 7) {
+    if (item.proxy.position.z > 7) {
       item.active = false;
-      item.mesh.dispose();
+      item.proxy.dispose(false, false);
     }
   }
 
@@ -326,7 +411,7 @@ function updateGame(dt: number) {
 
 function collectCrystal(item: RunnerItem) {
   item.active = false;
-  item.mesh.dispose();
+  item.proxy.dispose(false, false);
   crystals += 1;
   score += 35;
   feedbackTextTimer = 0.35;
@@ -336,6 +421,7 @@ function collectCrystal(item: RunnerItem) {
 function triggerExplosion() {
   explosionTimer = 0.42;
   explosion.position.x = player.position.x;
+  explosion.position.y = 1.05;
   explosion.position.z = player.position.z;
   explosion.scaling.set(0.8, 0.8, 0.8);
   explosion.material = spriteMaterials.explosion[0];

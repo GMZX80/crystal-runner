@@ -39,6 +39,23 @@ Date: 2026-07-03
 - Files are already very small default-size transparent PNGs.
 - The full ZIP, previews, vector sources, retina files, and unused sprites are not committed.
 - Selected runtime payload added is under 15 KB before build copying.
+- Runtime sprites are displayed as unlit alpha billboard planes so they read correctly in the 3D camera.
+- Gameplay entities use invisible collision proxies so transparent sprite pixels do not create unfair collisions.
+
+## Supported Visual Asset Classes
+
+### 3D assets
+
+- GLB/glTF models.
+- Used for world geometry, path, environment props, and later character/ship models.
+- Must follow mobile performance budgets for triangles, materials, textures, draw calls, and loading time.
+
+### 2.5D sprite assets
+
+- Transparent PNG sprites or spritesheets.
+- Used for fast iteration, pickups, hazards, characters, and effects where 3D models are not yet justified.
+- Must use alpha-aware unlit materials and vertical billboard planes unless deliberately used as a floor decal.
+- Must use a separate collision proxy for gameplay.
 
 ## References Updated
 
@@ -48,10 +65,10 @@ Date: 2026-07-03
 
 ## Checks Required
 
-- `npm run build`
-- Local browser preview visual check
-- GitHub Pages deployment check
-- Deployed URL visual check
+- `npm run build`: passed locally after billboard refactor.
+- Local browser preview visual check: passed for upright sprites, collision/restart, and mobile-sized viewport.
+- GitHub Pages deployment check: pending for billboard refactor.
+- Deployed URL visual check: pending for billboard refactor.
 
 ## Remaining Risks
 

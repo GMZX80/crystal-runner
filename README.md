@@ -47,6 +47,7 @@ Selected sprites come from Kenney's Pirate Pack:
 - Licence: Creative Commons CC0
 - Runtime files: `public/assets/kenney-pirate/`
 - Notes: only selected default-size PNG delivery assets are committed; the full source ZIP is not committed.
+- Representation: upright 2.5D billboard sprites inside the Babylon.js 3D scene with separate invisible collision proxies.
 
 ## Mobile Packaging Preparation
 
@@ -67,4 +68,5 @@ The project is structured for later Capacitor preparation through the `dist` web
 - `docs/known-issues.md`
 - `docs/iteration-log.md`
 - `docs/skill-pilot-gap-report.md`
+- `docs/asset-representation.md`
 - `ASSET_OPTIMISATION_REPORT.md`

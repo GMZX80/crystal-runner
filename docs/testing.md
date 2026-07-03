@@ -22,6 +22,8 @@ npm run preview
 - [ ] Crest collection works
 - [ ] Collision/failure works
 - [ ] Restart works
+- [ ] Sprite planes are upright billboards, not floor decals
+- [ ] Collision uses invisible proxies rather than transparent sprite rectangles
 - [ ] Desktop layout works
 - [ ] Mobile browser layout works
 - [ ] Audio/visual feedback works where implemented
@@ -35,6 +37,15 @@ Validated on 2026-07-03:
 - `npm run preview`: passed at `http://localhost:4173/crystal-runner/`.
 - GitHub Pages: passed at `https://gmzx80.github.io/crystal-runner/`.
 - Workflow: `https://github.com/GMZX80/crystal-runner/actions/runs/28656028435`.
+
+## 2026-07-03 Billboard Sprite Iteration
+
+- `npm run build`: passed.
+- Local preview: passed at `http://localhost:4173/crystal-runner/`.
+- Console errors: none in local preview.
+- Desktop viewport: upright billboard player, crests, and hazards visible.
+- Mobile-sized viewport: HUD/buttons fit and upright sprites remain readable.
+- Collision/game-over/restart: passed locally.
 - Deployment commit: `eedf39b701ff16719ccccd76e67aba103ce11722`.
 
 ## Deployed URL Checks
