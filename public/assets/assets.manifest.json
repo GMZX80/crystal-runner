@@ -1,0 +1,4 @@
+{
+  "assets": [],
+  "notes": "Crystal Runner pilot uses generated Babylon.js geometry and materials only. No external runtime assets are required for v0.1.0."
+}

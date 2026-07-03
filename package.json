@@ -1,0 +1,22 @@
+{
+  "name": "crystal-runner",
+  "version": "0.1.0",
+  "private": false,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview --host 0.0.0.0",
+    "cap:init": "npx cap init CrystalRunner com.gmzx80.crystalrunner --web-dir dist",
+    "cap:sync": "npx cap sync",
+    "android": "npx cap open android",
+    "ios": "npx cap open ios"
+  },
+  "dependencies": {
+    "@babylonjs/core": "^8.37.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.2",
+    "vite": "^7.0.0"
+  }
+}

@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#07121f" />
+    <title>Crystal Runner</title>
+  </head>
+  <body>
+    <div id="app">
+      <canvas id="game-canvas" aria-label="Crystal Runner game canvas"></canvas>
+      <div id="hud" class="hud">
+        <div>
+          <span class="label">Score</span>
+          <strong id="score">0</strong>
+        </div>
+        <div>
+          <span class="label">Crystals</span>
+          <strong id="crystals">0</strong>
+        </div>
+        <div>
+          <span class="label">Best</span>
+          <strong id="best">0</strong>
+        </div>
+      </div>
+      <div id="debug" class="debug">FPS 0 | Speed 0 | State loading</div>
+      <div id="overlay" class="overlay">
+        <div class="panel">
+          <h1 id="overlay-title">Crystal Runner</h1>
+          <p id="overlay-text">Dodge the red blocks, collect crystals, and survive along the floating path.</p>
+          <button id="primary-action" type="button">Start Run</button>
+          <p class="help">Keyboard: A/D or arrows. Touch: swipe or use the lane buttons.</p>
+        </div>
+      </div>
+      <div class="touch-controls" aria-label="Touch lane controls">
+        <button id="lane-left" type="button" aria-label="Move left">Left</button>
+        <button id="lane-right" type="button" aria-label="Move right">Right</button>
+      </div>
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
