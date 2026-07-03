@@ -67,8 +67,8 @@ Date: 2026-07-03
 
 - `npm run build`: passed locally after billboard refactor.
 - Local browser preview visual check: passed for upright sprites, collision/restart, and mobile-sized viewport.
-- GitHub Pages deployment check: pending for billboard refactor.
-- Deployed URL visual check: pending for billboard refactor.
+- GitHub Pages deployment check: passed for commit `9c8dc6925475f9903c5d47428e97f966421bdecb`.
+- Deployed URL visual check: passed for desktop and mobile-sized viewports.
 
 ## Remaining Risks
 

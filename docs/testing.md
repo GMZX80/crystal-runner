@@ -46,6 +46,9 @@ Validated on 2026-07-03:
 - Desktop viewport: upright billboard player, crests, and hazards visible.
 - Mobile-sized viewport: HUD/buttons fit and upright sprites remain readable.
 - Collision/game-over/restart: passed locally.
+- GitHub Pages: passed at `https://gmzx80.github.io/crystal-runner/`.
+- Deployed commit: `9c8dc6925475f9903c5d47428e97f966421bdecb`.
+- Live deployed check: page HTTP 200, player sprite HTTP 200, no critical console errors, controls/collision/game-over/mobile viewport passed.
 - Deployment commit: `eedf39b701ff16719ccccd76e67aba103ce11722`.
 
 ## Deployed URL Checks
