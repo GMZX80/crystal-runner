@@ -15,7 +15,7 @@ Design issues found: early obstacle patterns may be demanding; needs human playt
 Accessibility issues found: reduced-motion toggle and stronger non-colour distinctions not yet implemented
 Performance issues found: Vite warns about a large Babylon chunk over 500 kB
 Priority fixes: add reduced-motion option, improve visual distinction, tune first 30 seconds after human playtest
-Next iteration goal: Tune mobile controls, add reduced-motion option, improve obstacle/crystal visual distinction.
+Next iteration goal: Tune mobile controls, add reduced-motion option, improve hazard/collectible visual distinction.
 
 Iteration number: 2
 Date: 2026-07-03

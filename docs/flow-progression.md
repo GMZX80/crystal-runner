@@ -6,7 +6,7 @@ The first run starts slowly, then increases speed over time. Pattern frequency t
 
 ## Skill Curve
 
-Players first learn lane switching, then learn to read obstacle/crystal patterns while moving faster.
+Players first learn lane switching, then learn to read cannon/crest patterns while moving faster.
 
 ## Failure Analysis
 
@@ -14,7 +14,7 @@ Failure should feel fair if the red obstacle is visible early enough and the lan
 
 ## Retry Strategy
 
-Restart is immediate from the game-over panel. Score and crystal totals remain visible to encourage a better run without hiding why the player failed.
+Restart is immediate from the game-over panel. Score and crest totals remain visible to encourage a better run without hiding why the player failed.
 
 ## Playtest Questions
 

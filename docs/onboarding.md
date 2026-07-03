@@ -2,16 +2,16 @@
 
 ## First 30 Seconds
 
-The player sees a start screen with the objective and controls, then immediately encounters crystals and red obstacles.
+The player sees a start screen with the objective and controls, then immediately encounters gold crests and cannon hazards.
 
 ## Tutorial Strategy
 
 No long tutorial. Teach by play:
 
 - The path has only three lanes.
-- Crystals are collectible and blue.
+- Gold crests are collectible.
 - Obstacles are dangerous and red.
-- Score and crystals update visibly.
+- Score and crests update visibly.
 - Collision displays the reason and restart button.
 
 ## Control Introduction
@@ -22,4 +22,4 @@ Keyboard and touch controls are visible before the run starts. Touch buttons sta
 
 - If early speed is too high, first failure may feel unfair.
 - If touch buttons cover too much screen, mobile play may feel cramped.
-- If crystal/obstacle shapes are not distinct enough, accessibility suffers.
+- If crest/hazard shapes are not distinct enough, accessibility suffers.

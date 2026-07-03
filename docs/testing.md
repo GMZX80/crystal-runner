@@ -19,7 +19,7 @@ npm run preview
 - [ ] Keyboard controls work
 - [ ] Touch controls work
 - [ ] Score updates
-- [ ] Crystal collection works
+- [ ] Crest collection works
 - [ ] Collision/failure works
 - [ ] Restart works
 - [ ] Desktop layout works

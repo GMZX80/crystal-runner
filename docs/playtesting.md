@@ -2,7 +2,7 @@
 
 Playable URL: https://gmzx80.github.io/crystal-runner/
 
-Test objective: Confirm that first-time players understand lane switching, crystal collection, obstacle avoidance, failure, and retry within three minutes.
+Test objective: Confirm that first-time players understand lane switching, crest collection, cannon hazard avoidance, failure, and retry within three minutes.
 
 Suggested play duration: 3-5 minutes or three complete runs.
 

@@ -1,4 +1,33 @@
 {
-  "assets": [],
-  "notes": "Crystal Runner pilot uses generated Babylon.js geometry and materials only. No external runtime assets are required for v0.1.0."
+  "assets": [
+    {
+      "id": "kenney-pirate-player-ship",
+      "path": "/assets/kenney-pirate/player-ship.png",
+      "role": "player sprite",
+      "source": "Kenney Pirate Pack",
+      "license": "Creative Commons CC0"
+    },
+    {
+      "id": "kenney-pirate-obstacle-cannon",
+      "path": "/assets/kenney-pirate/obstacle-cannon.png",
+      "role": "obstacle sprite",
+      "source": "Kenney Pirate Pack",
+      "license": "Creative Commons CC0"
+    },
+    {
+      "id": "kenney-pirate-collectible-gold-crest",
+      "path": "/assets/kenney-pirate/collectible-gold-crest.png",
+      "role": "collectible sprite",
+      "source": "Kenney Pirate Pack",
+      "license": "Creative Commons CC0"
+    },
+    {
+      "id": "kenney-pirate-explosion",
+      "path": "/assets/kenney-pirate/explosion-1.png",
+      "role": "collision feedback animation frame",
+      "source": "Kenney Pirate Pack",
+      "license": "Creative Commons CC0"
+    }
+  ],
+  "notes": "Only selected small default-size PNG sprites from Kenney Pirate Pack are included for runtime delivery. Full source ZIP is not committed."
 }

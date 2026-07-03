@@ -1,6 +1,6 @@
 # Crystal Runner
 
-Crystal Runner is a small mobile-first Babylon.js 3D arcade game. The player controls a glowing runner on a narrow floating path, dodges red obstacles, collects blue crystals, and tries to survive as speed increases.
+Crystal Runner is a small mobile-first Babylon.js 3D arcade game. The player controls a pirate ship on a narrow floating sea path, dodges cannon hazards, collects gold pirate crests, and tries to survive as speed increases.
 
 ## Play
 
@@ -33,11 +33,20 @@ base: "/crystal-runner/"
 
 GitHub Pages deploys from `.github/workflows/deploy.yml` using GitHub Actions. GitHub Pages is the browser playtesting stage, not Android or iOS deployment.
 
-Latest validated deployment:
+Latest validated deployment before the Kenney sprite iteration:
 
-- Commit: `eedf39b701ff16719ccccd76e67aba103ce11722`
-- Workflow: https://github.com/GMZX80/crystal-runner/actions/runs/28656028435
+- Commit: `30d02dbe6d51ab50b70f3c973ce58ce3b4b8525d`
+- Workflow: https://github.com/GMZX80/crystal-runner/actions/runs/28656784958
 - Result: passed after rerunning the initial Pages deploy job
+
+## Assets
+
+Selected sprites come from Kenney's Pirate Pack:
+
+- Source: https://kenney.nl/assets/pirate-pack
+- Licence: Creative Commons CC0
+- Runtime files: `public/assets/kenney-pirate/`
+- Notes: only selected default-size PNG delivery assets are committed; the full source ZIP is not committed.
 
 ## Mobile Packaging Preparation
 
@@ -58,3 +67,4 @@ The project is structured for later Capacitor preparation through the `dist` web
 - `docs/known-issues.md`
 - `docs/iteration-log.md`
 - `docs/skill-pilot-gap-report.md`
+- `ASSET_OPTIMISATION_REPORT.md`
