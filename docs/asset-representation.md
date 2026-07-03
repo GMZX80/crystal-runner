@@ -14,7 +14,7 @@ The game keeps:
 - 3D collision proxies
 - render-loop animation and validation
 
-The sprite artwork is not drawn as a flat 2D canvas game and is not rotated onto the floor. Gameplay entities use an invisible collision proxy with a child visible billboard:
+The sprite artwork is not drawn as a flat 2D canvas game and is not rotated onto the floor. Gameplay entities use an invisible collision proxy with a child visible billboard created through `src/rendering/AnimatedBillboard.ts`:
 
 ```text
 entityRoot or collisionProxy
@@ -28,6 +28,21 @@ entityRoot or collisionProxy
 - Works in browser and remains suitable for later mobile testing.
 - Collision boxes stay fair and independent from transparent sprite pixels.
 - Visuals can later be replaced without rewriting gameplay logic.
+
+## Supported Asset Classes
+
+### 3D assets
+
+- GLB/glTF models.
+- World geometry, path, environment props, and later character or obstacle models.
+- Must follow the mobile performance budget for triangle count, texture memory, draw calls, loading time, and disposal.
+
+### 2.5D sprite assets
+
+- PNG spritesheets or individual transparent PNG frames on upright billboard planes.
+- Player, pickup, hazard, and cheap effect visuals during fast iteration.
+- Must use alpha-aware materials, avoid opaque boxes, stay upright in the 3D scene, and remain separate from collision proxies.
+- Spritesheet animation uses configurable rows, columns, frame ranges, looping, and frames per second.
 
 ## Decision Table
 

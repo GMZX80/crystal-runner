@@ -9,27 +9,15 @@ import { Mesh } from "@babylonjs/core/Meshes/mesh";
 import { MeshBuilder } from "@babylonjs/core/Meshes/meshBuilder";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import { Scene } from "@babylonjs/core/scene";
-import { Texture } from "@babylonjs/core/Materials/Textures/texture";
 import "@babylonjs/core/Meshes/Builders/boxBuilder";
 import "@babylonjs/core/Meshes/Builders/planeBuilder";
+import { AnimatedBillboard } from "./rendering/AnimatedBillboard";
 import "./style.css";
 
 type GameState = "ready" | "running" | "gameover" | "paused";
-type SpriteAnimationState = {
-  texture: Texture;
-  columns: number;
-  rows: number;
-  frames: number[];
-  fps: number;
-  loop: boolean;
-  elapsed: number;
-  currentFrameIndex: number;
-  playing: boolean;
-};
 type RunnerItem = {
   proxy: Mesh;
-  visual: Mesh;
-  animation: SpriteAnimationState;
+  visual: AnimatedBillboard;
   lane: number;
   z: number;
   type: "crystal" | "obstacle";
@@ -73,9 +61,7 @@ const keyLight = new DirectionalLight("key", new Vector3(-0.4, -0.9, 0.55), scen
 keyLight.position = new Vector3(5, 9, -8);
 keyLight.intensity = 1.8;
 
-const textures = createTextures(scene);
 const materials = createMaterials(scene);
-const spriteMaterials = createSpriteMaterials(scene, textures);
 const world = new TransformNode("world", scene);
 
 const lanePositions = [-2.45, 0, 2.45];
@@ -99,15 +85,38 @@ player.position = new Vector3(0, 0.48, 1.8);
 player.isVisible = false;
 player.parent = world;
 
-const playerVisual = createBillboardSprite("runner-visual", 1.35, 1.9, spriteMaterials.player, scene);
-playerVisual.position = new Vector3(0, 0.7, 0);
-playerVisual.parent = player;
-const playerAnimation = createSpriteSheetAnimation(textures.player, 1, 1, [0], 8, true);
+const playerVisual = new AnimatedBillboard("runner-visual", scene, {
+  textureUrl: `${assetBaseUrl}player-ship.png`,
+  width: 1.35,
+  height: 1.9,
+  columns: 1,
+  rows: 1,
+  animations: {
+    idle: { frames: [0], fps: 4, loop: true },
+    run: { frames: [0], fps: 8, loop: true },
+    hit: { frames: [0], fps: 1, loop: false }
+  },
+  initialAnimation: "idle",
+  emissiveTint: new Color3(0.03, 0.16, 0.2)
+});
+playerVisual.mesh.position = new Vector3(0, 0.7, 0);
+playerVisual.mesh.parent = player;
 
-const explosion = createBillboardSprite("collision-explosion", 2.2, 2.2, spriteMaterials.explosion[0], scene);
-explosion.position = new Vector3(0, 1.05, 1.8);
-explosion.setEnabled(false);
-explosion.parent = world;
+const explosionFrames = ["explosion-1.png", "explosion-2.png", "explosion-3.png"].map((fileName, index) => {
+  const sprite = new AnimatedBillboard(`collision-explosion-${index + 1}`, scene, {
+    textureUrl: `${assetBaseUrl}${fileName}`,
+    width: 2.2,
+    height: 2.2,
+    animations: {
+      idle: { frames: [0], fps: 1, loop: false }
+    },
+    emissiveTint: new Color3(0.55, 0.16, 0.02)
+  });
+  sprite.mesh.position = new Vector3(0, 1.05, 1.8);
+  sprite.mesh.parent = world;
+  sprite.setEnabled(false);
+  return sprite;
+});
 
 const pathSegments: Mesh[] = [];
 for (let i = 0; i < 18; i += 1) {
@@ -129,21 +138,6 @@ for (const x of [-3.72, 3.72]) {
 
 const items: RunnerItem[] = [];
 
-function createTextures(activeScene: Scene) {
-  const load = (fileName: string) => {
-    const texture = new Texture(`${assetBaseUrl}${fileName}`, activeScene, true, false, Texture.NEAREST_SAMPLINGMODE);
-    texture.hasAlpha = true;
-    return texture;
-  };
-
-  return {
-    player: load("player-ship.png"),
-    collectible: load("collectible-gold-crest.png"),
-    obstacle: load("obstacle-cannon.png"),
-    explosion: [load("explosion-1.png"), load("explosion-2.png"), load("explosion-3.png")]
-  };
-}
-
 function createMaterials(activeScene: Scene) {
   const pathMat = new StandardMaterial("path-mat", activeScene);
   pathMat.diffuseColor = new Color3(0.07, 0.13, 0.22);
@@ -154,86 +148,6 @@ function createMaterials(activeScene: Scene) {
   railMat.emissiveColor = new Color3(0.04, 0.22, 0.28);
 
   return { path: pathMat, rail: railMat };
-}
-
-function createSpriteMaterial(name: string, texture: Texture, activeScene: Scene, glow: Color3) {
-  const material = new StandardMaterial(name, activeScene);
-  material.diffuseTexture = texture;
-  material.emissiveTexture = texture;
-  material.opacityTexture = texture;
-  material.useAlphaFromDiffuseTexture = true;
-  material.diffuseColor = Color3.White();
-  material.emissiveColor = Color3.White().add(glow).scale(0.5);
-  material.specularColor = Color3.Black();
-  material.backFaceCulling = false;
-  material.disableLighting = true;
-  return material;
-}
-
-function createSpriteMaterials(activeScene: Scene, loadedTextures: ReturnType<typeof createTextures>) {
-  return {
-    player: createSpriteMaterial("player-ship-mat", loadedTextures.player, activeScene, new Color3(0.03, 0.16, 0.2)),
-    collectible: createSpriteMaterial("gold-crest-mat", loadedTextures.collectible, activeScene, new Color3(0.38, 0.28, 0.04)),
-    obstacle: createSpriteMaterial("cannon-mat", loadedTextures.obstacle, activeScene, new Color3(0.12, 0.03, 0.02)),
-    explosion: loadedTextures.explosion.map((texture, index) =>
-      createSpriteMaterial(`explosion-${index + 1}-mat`, texture, activeScene, new Color3(0.55, 0.16, 0.02))
-    )
-  };
-}
-
-function createBillboardSprite(name: string, width: number, height: number, material: StandardMaterial, activeScene: Scene) {
-  const plane = MeshBuilder.CreatePlane(name, { width, height }, activeScene);
-  plane.material = material;
-  plane.billboardMode = Mesh.BILLBOARDMODE_Y;
-  return plane;
-}
-
-function createSpriteSheetAnimation(texture: Texture, columns: number, rows: number, frames: number[], fps: number, loop: boolean): SpriteAnimationState {
-  texture.uScale = 1 / columns;
-  texture.vScale = 1 / rows;
-  const animation = {
-    texture,
-    columns,
-    rows,
-    frames,
-    fps,
-    loop,
-    elapsed: 0,
-    currentFrameIndex: 0,
-    playing: true
-  };
-  applySpriteSheetFrame(animation, frames[0] ?? 0);
-  return animation;
-}
-
-function applySpriteSheetFrame(animation: SpriteAnimationState, frame: number) {
-  const column = frame % animation.columns;
-  const row = Math.floor(frame / animation.columns);
-  animation.texture.uOffset = column / animation.columns;
-  // Babylon texture vOffset behaviour can feel inverted compared with top-left spritesheet tools.
-  // If a future sheet animates upside down, swap this for `row / animation.rows`.
-  animation.texture.vOffset = 1 - (row + 1) / animation.rows;
-}
-
-function updateSpriteSheetAnimation(animation: SpriteAnimationState, dt: number) {
-  if (!animation.playing || animation.frames.length <= 1) {
-    return;
-  }
-  animation.elapsed += dt;
-  const frameDuration = 1 / animation.fps;
-  while (animation.elapsed >= frameDuration) {
-    animation.elapsed -= frameDuration;
-    animation.currentFrameIndex += 1;
-    if (animation.currentFrameIndex >= animation.frames.length) {
-      if (animation.loop) {
-        animation.currentFrameIndex = 0;
-      } else {
-        animation.currentFrameIndex = animation.frames.length - 1;
-        animation.playing = false;
-      }
-    }
-    applySpriteSheetFrame(animation, animation.frames[animation.currentFrameIndex]);
-  }
 }
 
 function startRun() {
@@ -247,14 +161,15 @@ function startRun() {
   nextPattern = 0;
   player.position.x = lanePositions[lane];
   player.position.y = 0.48;
-  playerVisual.position.y = 0.7;
-  playerVisual.rotation.z = 0;
-  playerAnimation.elapsed = 0;
-  playerAnimation.currentFrameIndex = 0;
-  playerAnimation.playing = true;
+  playerVisual.mesh.position.y = 0.7;
+  playerVisual.mesh.rotation.z = 0;
+  playerVisual.play("run", true);
   explosionTimer = 0;
-  explosion.setEnabled(false);
-  items.forEach((item) => item.proxy.dispose(false, false));
+  explosionFrames.forEach((sprite) => sprite.setEnabled(false));
+  items.forEach((item) => {
+    item.visual.dispose();
+    item.proxy.dispose(false, false);
+  });
   items.length = 0;
   updateHud();
   overlayEl.classList.add("hidden");
@@ -264,6 +179,7 @@ function startRun() {
 
 function endRun(reason: string) {
   state = "gameover";
+  playerVisual.play("hit", true);
   triggerExplosion();
   best = Math.max(best, Math.floor(score));
   localStorage.setItem("crystal-runner-best", String(best));
@@ -312,19 +228,25 @@ function spawnItem(type: RunnerItem["type"], itemLane: number, z: number) {
   proxy.parent = world;
   proxy.position = new Vector3(lanePositions[itemLane], type === "crystal" ? 0.58 : 0.46, z);
 
-  const visual = createBillboardSprite(
-    `${type}-visual-${items.length}`,
-    type === "crystal" ? 1.2 : 1.45,
-    type === "crystal" ? 0.86 : 0.66,
-    type === "crystal" ? spriteMaterials.collectible : spriteMaterials.obstacle,
-    scene
-  );
-  visual.parent = proxy;
-  visual.position = new Vector3(0, type === "crystal" ? 0.1 : 0.04, 0);
-  visual.rotation.z = type === "crystal" ? 0 : -0.12 + (nextPattern % 3) * 0.12;
+  const visual = new AnimatedBillboard(`${type}-visual-${items.length}`, scene, {
+    textureUrl: `${assetBaseUrl}${type === "crystal" ? "collectible-gold-crest.png" : "obstacle-cannon.png"}`,
+    width: type === "crystal" ? 1.2 : 1.45,
+    height: type === "crystal" ? 0.86 : 0.66,
+    columns: 1,
+    rows: 1,
+    animations: {
+      idle: { frames: [0], fps: type === "crystal" ? 10 : 6, loop: true },
+      collect: { frames: [0], fps: 12, loop: false },
+      hit: { frames: [0], fps: 1, loop: false }
+    },
+    initialAnimation: "idle",
+    emissiveTint: type === "crystal" ? new Color3(0.38, 0.28, 0.04) : new Color3(0.12, 0.03, 0.02)
+  });
+  visual.mesh.parent = proxy;
+  visual.mesh.position = new Vector3(0, type === "crystal" ? 0.1 : 0.04, 0);
+  visual.mesh.rotation.z = type === "crystal" ? 0 : -0.12 + (nextPattern % 3) * 0.12;
 
-  const animation = createSpriteSheetAnimation(type === "crystal" ? textures.collectible : textures.obstacle, 1, 1, [0], type === "crystal" ? 10 : 6, true);
-  items.push({ proxy, visual, animation, lane: itemLane, z, type, active: true, wobbleSeed: performance.now() * 0.01 + itemLane });
+  items.push({ proxy, visual, lane: itemLane, z, type, active: true, wobbleSeed: performance.now() * 0.01 + itemLane });
 }
 
 function spawnPattern() {
@@ -357,9 +279,9 @@ function updateGame(dt: number) {
   const targetX = lanePositions[targetLane];
   player.position.x += (targetX - player.position.x) * Math.min(1, dt * 12);
   lane = targetLane;
-  playerVisual.position.y = 0.7 + Math.sin(performance.now() * 0.008) * 0.055;
-  playerVisual.rotation.z = (targetX - player.position.x) * -0.08 + Math.sin(performance.now() * 0.006) * 0.018;
-  updateSpriteSheetAnimation(playerAnimation, dt);
+  playerVisual.mesh.position.y = 0.7 + Math.sin(performance.now() * 0.008) * 0.055;
+  playerVisual.mesh.rotation.z = (targetX - player.position.x) * -0.08 + Math.sin(performance.now() * 0.006) * 0.018;
+  playerVisual.update(dt);
 
   for (const segment of pathSegments) {
     segment.position.z += speed * dt;
@@ -374,14 +296,14 @@ function updateGame(dt: number) {
     }
     item.z += speed * dt;
     item.proxy.position.z = item.z;
-    item.visual.position.y = (item.type === "crystal" ? 0.12 : 0.04) + Math.sin(performance.now() * 0.006 + item.wobbleSeed) * 0.08;
-    updateSpriteSheetAnimation(item.animation, dt);
+    item.visual.mesh.position.y = (item.type === "crystal" ? 0.12 : 0.04) + Math.sin(performance.now() * 0.006 + item.wobbleSeed) * 0.08;
+    item.visual.update(dt);
     if (item.type === "crystal") {
       const pulseScale = 1 + Math.sin(performance.now() * 0.012 + item.wobbleSeed) * 0.12;
-      item.visual.scaling.set(pulseScale, pulseScale, pulseScale);
-      item.visual.rotation.z += dt * 3.8;
+      item.visual.setScale(pulseScale);
+      item.visual.mesh.rotation.z += dt * 3.8;
     } else {
-      item.visual.rotation.z += Math.sin(performance.now() * 0.005 + item.wobbleSeed) * dt * 0.22;
+      item.visual.mesh.rotation.z += Math.sin(performance.now() * 0.005 + item.wobbleSeed) * dt * 0.22;
     }
 
     const dx = Math.abs(item.proxy.position.x - player.position.x);
@@ -396,6 +318,7 @@ function updateGame(dt: number) {
 
     if (item.proxy.position.z > 7) {
       item.active = false;
+      item.visual.dispose();
       item.proxy.dispose(false, false);
     }
   }
@@ -411,6 +334,8 @@ function updateGame(dt: number) {
 
 function collectCrystal(item: RunnerItem) {
   item.active = false;
+  item.visual.play("collect", true);
+  item.visual.dispose();
   item.proxy.dispose(false, false);
   crystals += 1;
   score += 35;
@@ -420,27 +345,30 @@ function collectCrystal(item: RunnerItem) {
 
 function triggerExplosion() {
   explosionTimer = 0.42;
-  explosion.position.x = player.position.x;
-  explosion.position.y = 1.05;
-  explosion.position.z = player.position.z;
-  explosion.scaling.set(0.8, 0.8, 0.8);
-  explosion.material = spriteMaterials.explosion[0];
-  explosion.setEnabled(true);
+  explosionFrames.forEach((sprite, index) => {
+    sprite.mesh.position.x = player.position.x;
+    sprite.mesh.position.y = 1.05;
+    sprite.mesh.position.z = player.position.z;
+    sprite.setScale(0.8);
+    sprite.setEnabled(index === 0);
+  });
 }
 
 function updateExplosion(dt: number) {
   if (explosionTimer <= 0) {
-    explosion.setEnabled(false);
+    explosionFrames.forEach((sprite) => sprite.setEnabled(false));
     return;
   }
   explosionTimer = Math.max(0, explosionTimer - dt);
   const progress = 1 - explosionTimer / 0.42;
-  const frame = Math.min(spriteMaterials.explosion.length - 1, Math.floor(progress * spriteMaterials.explosion.length));
-  explosion.material = spriteMaterials.explosion[frame];
+  const frame = Math.min(explosionFrames.length - 1, Math.floor(progress * explosionFrames.length));
   const scale = 0.9 + progress * 0.9;
-  explosion.scaling.set(scale, scale, scale);
+  explosionFrames.forEach((sprite, index) => {
+    sprite.setEnabled(index === frame);
+    sprite.setScale(scale);
+  });
   if (explosionTimer === 0) {
-    explosion.setEnabled(false);
+    explosionFrames.forEach((sprite) => sprite.setEnabled(false));
   }
 }
 

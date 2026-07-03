@@ -13,6 +13,7 @@
 ## Fixed During Pilot
 
 - Keyboard, touch button, and swipe inputs initially moved the runner in the opposite visible screen direction because the camera-facing view mirrored the lane coordinate direction. This was fixed by mapping inputs to screen-facing movement helpers.
+- Kenney sprite artwork was initially displayed as textured planes that read like floor decals in the 3D camera view. Player, collectibles, hazards, and explosion effects now use upright Y-axis billboard planes through `src/rendering/AnimatedBillboard.ts`, with alpha-aware unlit materials and separate invisible collision proxy boxes.
 
 ## Accepted Pilot Constraints
 
