@@ -32,6 +32,14 @@ type RunwayLight = {
   z: number;
   phase: number;
 };
+type SevenSegmentDisplay = {
+  root: TransformNode;
+  digits: Array<{
+    root: TransformNode;
+    segments: Mesh[];
+  }>;
+  value: string;
+};
 
 const pathSegmentDepth = 4;
 const pathSegmentCount = 24;
@@ -39,17 +47,17 @@ const pathNearZ = 10;
 const pathRecycleZ = pathNearZ + pathSegmentDepth;
 const pathLoopLength = pathSegmentCount * pathSegmentDepth;
 
-const canvas = document.querySelector<HTMLCanvasElement>("#game-canvas");
-const scoreEl = document.querySelector<HTMLElement>("#score");
-const crystalsEl = document.querySelector<HTMLElement>("#crystals");
-const bestEl = document.querySelector<HTMLElement>("#best");
-const debugEl = document.querySelector<HTMLElement>("#debug");
-const overlayEl = document.querySelector<HTMLElement>("#overlay");
-const overlayTitle = document.querySelector<HTMLElement>("#overlay-title");
-const overlayText = document.querySelector<HTMLElement>("#overlay-text");
-const primaryAction = document.querySelector<HTMLButtonElement>("#primary-action");
-const laneLeft = document.querySelector<HTMLButtonElement>("#lane-left");
-const laneRight = document.querySelector<HTMLButtonElement>("#lane-right");
+const canvas = document.querySelector<HTMLCanvasElement>("#game-canvas")!;
+const scoreEl = document.querySelector<HTMLElement>("#score")!;
+const crystalsEl = document.querySelector<HTMLElement>("#crystals")!;
+const bestEl = document.querySelector<HTMLElement>("#best")!;
+const debugEl = document.querySelector<HTMLElement>("#debug")!;
+const overlayEl = document.querySelector<HTMLElement>("#overlay")!;
+const overlayTitle = document.querySelector<HTMLElement>("#overlay-title")!;
+const overlayText = document.querySelector<HTMLElement>("#overlay-text")!;
+const primaryAction = document.querySelector<HTMLButtonElement>("#primary-action")!;
+const laneLeft = document.querySelector<HTMLButtonElement>("#lane-left")!;
+const laneRight = document.querySelector<HTMLButtonElement>("#lane-right")!;
 
 if (!canvas || !scoreEl || !crystalsEl || !bestEl || !debugEl || !overlayEl || !overlayTitle || !overlayText || !primaryAction || !laneLeft || !laneRight) {
   throw new Error("Crystal Runner UI failed to initialise.");
@@ -169,6 +177,11 @@ function createMaterials(activeScene: Scene) {
   runwayLightMat.emissiveColor = new Color3(0.04, 0.72, 0.95);
   runwayLightMat.specularColor = Color3.Black();
 
+  const numberMat = new StandardMaterial("number-mat", activeScene);
+  numberMat.diffuseColor = new Color3(0.62, 0.93, 1);
+  numberMat.emissiveColor = new Color3(0.06, 0.58, 0.9);
+  numberMat.specularColor = new Color3(0.38, 0.82, 1);
+
   const explosionMat = new StandardMaterial("explosion-mesh-mat", activeScene);
   explosionMat.diffuseColor = new Color3(1, 0.42, 0.08);
   explosionMat.emissiveColor = new Color3(1, 0.18, 0.03);
@@ -182,6 +195,7 @@ function createMaterials(activeScene: Scene) {
     crystal: crystalMat,
     obstacle: obstacleMat,
     runwayLight: runwayLightMat,
+    number: numberMat,
     explosion: explosionMat
   };
 }
@@ -209,6 +223,91 @@ function createRunwayLights(activeScene: Scene, parent: TransformNode, gameMater
   }
   return lights;
 }
+
+const digitSegments: Record<string, number[]> = {
+  "0": [0, 1, 2, 3, 4, 5],
+  "1": [1, 2],
+  "2": [0, 1, 6, 4, 3],
+  "3": [0, 1, 6, 2, 3],
+  "4": [5, 6, 1, 2],
+  "5": [0, 5, 6, 2, 3],
+  "6": [0, 5, 6, 4, 2, 3],
+  "7": [0, 1, 2],
+  "8": [0, 1, 2, 3, 4, 5, 6],
+  "9": [0, 1, 2, 3, 5, 6]
+};
+
+function createSevenSegmentDigit(name: string, activeScene: Scene, parent: TransformNode, gameMaterials: ReturnType<typeof createMaterials>) {
+  const root = new TransformNode(`${name}-root`, activeScene);
+  root.parent = parent;
+
+  const segmentLayout = [
+    { x: 0, y: 0.52, width: 0.52, height: 0.08 },
+    { x: 0.32, y: 0.27, width: 0.08, height: 0.42 },
+    { x: 0.32, y: -0.27, width: 0.08, height: 0.42 },
+    { x: 0, y: -0.52, width: 0.52, height: 0.08 },
+    { x: -0.32, y: -0.27, width: 0.08, height: 0.42 },
+    { x: -0.32, y: 0.27, width: 0.08, height: 0.42 },
+    { x: 0, y: 0, width: 0.5, height: 0.08 }
+  ];
+
+  const segments = segmentLayout.map((segment, index) => {
+    const mesh = MeshBuilder.CreateBox(`${name}-segment-${index}`, {
+      width: segment.width,
+      height: segment.height,
+      depth: 0.12
+    }, activeScene);
+    mesh.position = new Vector3(segment.x, segment.y, 0);
+    mesh.material = gameMaterials.number;
+    mesh.parent = root;
+    return mesh;
+  });
+
+  return { root, segments };
+}
+
+function createSevenSegmentDisplay(
+  name: string,
+  maxDigits: number,
+  position: Vector3,
+  scale: number,
+  activeScene: Scene,
+  parent: TransformNode,
+  gameMaterials: ReturnType<typeof createMaterials>
+): SevenSegmentDisplay {
+  const root = new TransformNode(`${name}-display`, activeScene);
+  root.position = position;
+  root.scaling.set(scale, scale, scale);
+  root.parent = parent;
+
+  const digits: SevenSegmentDisplay["digits"] = [];
+  const spacing = 0.86;
+  for (let i = 0; i < maxDigits; i += 1) {
+    const digit = createSevenSegmentDigit(`${name}-digit-${i}`, activeScene, root, gameMaterials);
+    digit.root.position.x = (i - (maxDigits - 1) / 2) * spacing;
+    digits.push(digit);
+  }
+
+  return { root, digits, value: "" };
+}
+
+function setSevenSegmentDisplay(display: SevenSegmentDisplay, value: number) {
+  const nextValue = String(Math.max(0, Math.floor(value))).slice(-display.digits.length).padStart(display.digits.length, " ");
+  if (nextValue === display.value) {
+    return;
+  }
+  display.value = nextValue;
+
+  for (let i = 0; i < display.digits.length; i += 1) {
+    const activeSegments = digitSegments[nextValue[i]] ?? [];
+    for (let segmentIndex = 0; segmentIndex < display.digits[i].segments.length; segmentIndex += 1) {
+      display.digits[i].segments[segmentIndex].setEnabled(activeSegments.includes(segmentIndex));
+    }
+  }
+}
+
+const scoreDisplay = createSevenSegmentDisplay("score", 5, new Vector3(-1.45, 2.25, 3.25), 0.42, scene, world, materials);
+const crystalDisplay = createSevenSegmentDisplay("crystals", 2, new Vector3(2.65, 1.92, 3.25), 0.34, scene, world, materials);
 
 function startRun() {
   state = "running";
@@ -259,6 +358,8 @@ function updateHud() {
   scoreEl.textContent = String(Math.floor(score));
   crystalsEl.textContent = String(crystals);
   bestEl.textContent = String(best);
+  setSevenSegmentDisplay(scoreDisplay, score);
+  setSevenSegmentDisplay(crystalDisplay, crystals);
 }
 
 function moveLane(worldDirection: -1 | 1) {
