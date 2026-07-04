@@ -33,6 +33,12 @@ type RunwayLight = {
   phase: number;
 };
 
+const pathSegmentDepth = 4;
+const pathSegmentCount = 24;
+const pathNearZ = 10;
+const pathRecycleZ = pathNearZ + pathSegmentDepth;
+const pathLoopLength = pathSegmentCount * pathSegmentDepth;
+
 const canvas = document.querySelector<HTMLCanvasElement>("#game-canvas");
 const scoreEl = document.querySelector<HTMLElement>("#score");
 const crystalsEl = document.querySelector<HTMLElement>("#crystals");
@@ -109,9 +115,9 @@ explosion.setEnabled(false);
 explosion.parent = world;
 
 const pathSegments: Mesh[] = [];
-for (let i = 0; i < 18; i += 1) {
-  const segment = MeshBuilder.CreateBox(`path-${i}`, { width: 7.2, height: 0.18, depth: 4 }, scene);
-  segment.position = new Vector3(0, -0.12, -i * 4);
+for (let i = 0; i < pathSegmentCount; i += 1) {
+  const segment = MeshBuilder.CreateBox(`path-${i}`, { width: 7.2, height: 0.18, depth: pathSegmentDepth }, scene);
+  segment.position = new Vector3(0, -0.12, pathNearZ - i * pathSegmentDepth);
   segment.material = materials.path;
   segment.parent = world;
   pathSegments.push(segment);
@@ -119,8 +125,8 @@ for (let i = 0; i < 18; i += 1) {
 
 const rails: Mesh[] = [];
 for (const x of [-3.72, 3.72]) {
-  const rail = MeshBuilder.CreateBox(`rail-${x}`, { width: 0.1, height: 0.18, depth: 70 }, scene);
-  rail.position = new Vector3(x, 0.12, -32);
+  const rail = MeshBuilder.CreateBox(`rail-${x}`, { width: 0.1, height: 0.18, depth: pathLoopLength }, scene);
+  rail.position = new Vector3(x, 0.12, pathNearZ - pathLoopLength / 2);
   rail.material = materials.rail;
   rail.parent = world;
   rails.push(rail);
@@ -182,10 +188,10 @@ function createMaterials(activeScene: Scene) {
 
 function createRunwayLights(activeScene: Scene, parent: TransformNode, gameMaterials: ReturnType<typeof createMaterials>) {
   const lights: RunwayLight[] = [];
-  for (let i = 0; i < 18; i += 1) {
+  for (let i = 0; i < pathSegmentCount; i += 1) {
     for (const side of [-1, 1]) {
       const marker = MeshBuilder.CreateSphere(`runway-light-${i}-${side}`, { diameter: 0.22, segments: 8 }, activeScene);
-      marker.position = new Vector3(side * 3.48, 0.15, -i * 4 - 1.5);
+      marker.position = new Vector3(side * 3.48, 0.15, pathNearZ - i * pathSegmentDepth - 1.5);
       marker.material = gameMaterials.runwayLight;
       marker.parent = parent;
 
@@ -332,8 +338,8 @@ function updateGame(dt: number) {
 
   for (const segment of pathSegments) {
     segment.position.z += speed * dt;
-    if (segment.position.z > 4) {
-      segment.position.z -= pathSegments.length * 4;
+    if (segment.position.z > pathRecycleZ) {
+      segment.position.z -= pathLoopLength;
     }
   }
 
@@ -418,8 +424,8 @@ function updateRunwayLights(dt: number) {
   for (const runwayLight of runwayLights) {
     if (state === "running") {
       runwayLight.z += speed * dt;
-      if (runwayLight.z > 5) {
-        runwayLight.z -= 72;
+      if (runwayLight.z > pathRecycleZ) {
+        runwayLight.z -= pathLoopLength;
       }
       runwayLight.marker.position.z = runwayLight.z;
     }
