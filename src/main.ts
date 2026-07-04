@@ -39,6 +39,9 @@ type SevenSegmentDisplay = {
     segments: Mesh[];
   }>;
   value: string;
+  align: "left" | "right";
+  depth: number;
+  baseScale: number;
 };
 
 const pathSegmentDepth = 4;
@@ -269,16 +272,15 @@ function createSevenSegmentDigit(name: string, activeScene: Scene, parent: Trans
 function createSevenSegmentDisplay(
   name: string,
   maxDigits: number,
-  position: Vector3,
+  align: SevenSegmentDisplay["align"],
   scale: number,
+  depth: number,
   activeScene: Scene,
-  parent: TransformNode,
   gameMaterials: ReturnType<typeof createMaterials>
 ): SevenSegmentDisplay {
   const root = new TransformNode(`${name}-display`, activeScene);
-  root.position = position;
+  root.billboardMode = TransformNode.BILLBOARDMODE_ALL;
   root.scaling.set(scale, scale, scale);
-  root.parent = parent;
 
   const digits: SevenSegmentDisplay["digits"] = [];
   const spacing = 0.86;
@@ -288,7 +290,7 @@ function createSevenSegmentDisplay(
     digits.push(digit);
   }
 
-  return { root, digits, value: "" };
+  return { root, digits, value: "", align, depth, baseScale: scale };
 }
 
 function setSevenSegmentDisplay(display: SevenSegmentDisplay, value: number) {
@@ -306,8 +308,8 @@ function setSevenSegmentDisplay(display: SevenSegmentDisplay, value: number) {
   }
 }
 
-const scoreDisplay = createSevenSegmentDisplay("score", 5, new Vector3(-1.45, 2.25, 3.25), 0.42, scene, world, materials);
-const crystalDisplay = createSevenSegmentDisplay("crystals", 2, new Vector3(2.65, 1.92, 3.25), 0.34, scene, world, materials);
+const scoreDisplay = createSevenSegmentDisplay("score", 5, "left", 0.32, 8, scene, materials);
+const crystalDisplay = createSevenSegmentDisplay("crystals", 2, "right", 0.28, 8, scene, materials);
 
 function startRun() {
   state = "running";
@@ -546,6 +548,32 @@ function updateCamera(dt: number) {
   camera.radius = 15.5;
 }
 
+function updateCameraDisplays() {
+  const displays = [scoreDisplay, crystalDisplay];
+  const aspect = engine.getRenderWidth() / Math.max(1, engine.getRenderHeight());
+
+  for (const display of displays) {
+    const forward = camera.target.subtract(camera.position).normalize();
+    const right = Vector3.Cross(Vector3.Up(), forward).normalize();
+    const up = Vector3.Cross(forward, right).normalize();
+    const halfHeight = Math.tan(camera.fov / 2) * display.depth;
+    const halfWidth = halfHeight * aspect;
+    const isPortrait = aspect < 0.75;
+    const scale = isPortrait ? display.baseScale * 0.62 : display.baseScale;
+    const xPadding = display.align === "left"
+      ? (isPortrait ? 0.52 : 1.2)
+      : (isPortrait ? 0.42 : 0.72);
+    const xOffset = display.align === "left" ? -halfWidth + xPadding : halfWidth - xPadding;
+    const yOffset = halfHeight - (isPortrait ? 1.85 : 1.35);
+
+    display.root.scaling.set(scale, scale, scale);
+    display.root.position.copyFrom(camera.position);
+    display.root.position.addInPlace(forward.scale(display.depth));
+    display.root.position.addInPlace(right.scale(xOffset));
+    display.root.position.addInPlace(up.scale(yOffset));
+  }
+}
+
 function beep(frequency: number, duration: number, type: OscillatorType, gainValue: number) {
   const AudioContextClass = window.AudioContext || (window as Window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
   if (!AudioContextClass) {
@@ -641,6 +669,7 @@ engine.runRenderLoop(() => {
   updateExplosion(dt);
   updateRunwayLights(dt);
   updateCamera(dt);
+  updateCameraDisplays();
   updateDebug();
   scene.render();
 });
